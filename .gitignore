@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# 本地环境配置（含密钥，切勿提交）
+backend/.env
+
+# 工作区产物（Agent 运行生成的文件）
+backend/workspace/
+!backend/workspace/.gitkeep
+
+# 本地部署用的大文件（不上传）
+cloudflared.exe
+*.exe
+
+# 系统
+.DS_Store
+Thumbs.db

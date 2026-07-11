@@ -1,0 +1,22 @@
+# AURAVIA 曜维 · Render 部署配置
+# 用法：把整个 auravia 仓库推到 GitHub，在 render.com 选 "New" -> "Blueprint" -> 连仓库即可。
+services:
+  - type: web
+    name: auravia
+    runtime: python
+    plan: free
+    region: oregon          # 可改 singapore 等；free 计划默认 oregon
+    rootDir: backend        # 服务根目录在 backend/
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      # 可选：填入真实 LLM 配置后关闭 DEMO 模式（不填则自动 DEMO 免 key 运行）
+      - key: AURAVIA_API_KEY
+        sync: false
+      - key: AURAVIA_BASE_URL
+        sync: false
+      - key: AURAVIA_MODEL
+        sync: false

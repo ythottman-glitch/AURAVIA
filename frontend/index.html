@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AURAVIA · 曜维 自主智能体</title>
+<script src="config.js"></script>
+<style>
+  :root{
+    --bg:#0b0f1a; --panel:#121829; --panel2:#0f1424; --line:#1e2940;
+    --txt:#e7ecf5; --muted:#8b97b3; --accent:#5b8cff; --accent2:#9b6bff;
+    --think:#3a4a7a; --tool:#1f6f54; --obs:#5a4a1f; --result:#2a5a8f;
+    --ok:#3ddc97;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#16203a 0%,var(--bg) 60%);
+    color:var(--txt);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+  header{display:flex;align-items:center;gap:14px;padding:18px 26px;border-bottom:1px solid var(--line);
+    background:rgba(11,15,26,.7);backdrop-filter:blur(8px);position:sticky;top:0;z-index:5}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;box-shadow:0 0 18px rgba(91,140,255,.5)}
+  .title{font-weight:700;font-size:18px}
+  .title small{color:var(--muted);font-weight:500;margin-left:8px;font-size:13px}
+  .spacer{flex:1}
+  .langbtn{border:1px solid var(--line);background:var(--panel);color:var(--txt);padding:7px 14px;
+    border-radius:8px;cursor:pointer;font-size:13px}
+  .langbtn:hover{border-color:var(--accent)}
+  .mode-badge{font-size:12px;color:var(--ok);border:1px solid var(--line);padding:4px 10px;border-radius:20px}
+  .wrap{display:flex;gap:18px;padding:22px;max-width:1200px;margin:0 auto}
+  .col{flex:1;min-width:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  h3{margin:0 0 12px;font-size:14px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+  textarea{width:100%;min-height:96px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    color:var(--txt);padding:12px;font:inherit;resize:vertical;outline:none}
+  textarea:focus{border-color:var(--accent)}
+  .row{display:flex;gap:10px;margin-top:10px}
+  button.go{flex:1;background:linear-gradient(135deg,var(--accent),var(--accent2));border:0;color:#fff;
+    padding:11px;border-radius:10px;font-weight:700;cursor:pointer;font-size:14px}
+  button.go:disabled{opacity:.5;cursor:not-allowed}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--muted);padding:11px 14px;border-radius:10px;cursor:pointer}
+  .suggest{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chip{font-size:12px;color:var(--muted);border:1px solid var(--line);padding:6px 11px;border-radius:20px;cursor:pointer}
+  .chip:hover{color:var(--txt);border-color:var(--accent)}
+  #log{display:flex;flex-direction:column;gap:10px;max-height:62vh;overflow:auto;padding-right:4px}
+  .ev{border-left:3px solid var(--line);background:var(--panel2);border-radius:10px;padding:11px 14px;font-size:13.5px}
+  .ev .tag{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;display:inline-block;margin-bottom:6px}
+  .ev.thinking{border-color:var(--think)} .ev.thinking .tag{color:#9fb4ff}
+  .ev.tool_call{border-color:var(--tool)} .ev.tool_call .tag{color:#54e3a6}
+  .ev.observation{border-color:var(--obs)} .ev.observation .tag{color:#ffd36b}
+  .ev.observation .body{color:var(--muted);white-space:pre-wrap;max-height:240px;overflow:auto;font-family:ui-monospace,Consolas,monospace;font-size:12.5px}
+  .ev.result{border-color:var(--result);background:linear-gradient(180deg,rgba(42,90,143,.18),var(--panel2))}
+  .ev.result .tag{color:#7ec1ff} .ev.result .body{white-space:pre-wrap}
+  .ev.error{border-color:#d35a5a} .ev.error .tag{color:#ff8b8b}
+  .ev.start{border-color:var(--accent)} .ev.start .tag{color:var(--accent)}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:13px}
+  .spin{display:inline-block;width:9px;height:9px;border:2px solid var(--accent);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .foot{color:var(--muted);font-size:12px;text-align:center;padding:10px}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">A</div>
+  <div class="title">AURAVIA <small data-i18n="subtitle">曜维 · 自主任务型智能体</small></div>
+  <div class="spacer"></div>
+  <span class="mode-badge" id="modeBadge">…</span>
+  <button class="langbtn" id="langBtn">EN</button>
+</header>
+
+<div class="wrap">
+  <div class="col">
+    <div class="card">
+      <h3 data-i18n="newtask">新任务</h3>
+      <textarea id="task" data-i18n-ph="ph_task" placeholder="例如：帮我调研「自主智能体」最新进展，整理成带摘要的报告…"></textarea>
+      <div class="suggest" id="suggest"></div>
+      <div class="row">
+        <button class="go" id="runBtn" data-i18n="run">▶ 运行任务</button>
+        <button class="ghost" id="clearBtn" data-i18n="clear">清空</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="about">关于 AURAVIA</h3>
+      <div style="font-size:13px;color:var(--muted)" data-i18n="aboutbody">
+        开源自主任务型 Agent：规划 → 调用工具（搜索/抓取/Python/Shell/文件）→ 观察 → 交付。
+        未配置 LLM 时自动进入 DEMO 演示模式；在 <code>backend/.env</code> 填入 API key 即切换为真实自主推理。
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="card" style="height:calc(100% - 14px)">
+      <h3 data-i18n="trace">执行轨迹 (Live)</h3>
+      <div id="log"><div class="empty" id="emptyHint" data-i18n="empty">尚无任务。在左侧输入任务并点击运行。</div></div>
+    </div>
+  </div>
+</div>
+<div class="foot">AURAVIA · 曜维 — 本地可运行 MVP · OpenAI 兼容 · 免 key DEMO</div>
+
+<script>
+const I18N = {
+  zh:{
+    subtitle:"曜维 · 自主任务型智能体", run:"▶ 运行任务", clear:"清空", about:"关于 AURAVIA",
+    aboutbody:"开源自主任务型 Agent：规划 → 调用工具（搜索/抓取/Python/Shell/文件）→ 观察 → 交付。未配置 LLM 时自动进入 DEMO 演示模式；在 backend/.env 填入 API key 即切换为真实自主推理。",
+    trace:"执行轨迹 (Live)", empty:"尚无任务。在左侧输入任务并点击运行。",
+    ph_task:"例如：帮我调研「自主智能体」最新进展，整理成带摘要的报告…",
+    tags:{thinking:"思考",tool_call:"工具调用",observation:"观察结果",result:"最终交付",error:"错误",start:"任务开始",done:"完成"},
+    suggests:["调研「AI 智能体」最新进展并写报告","用 Python 计算斐波那契前 30 项并保存","搜索今日科技新闻并总结要点"]
+  },
+  en:{
+    subtitle:"Autonomous Task Agent", run:"▶ Run Task", clear:"Clear", about:"About AURAVIA",
+    aboutbody:"Open-source autonomous agent: plan → use tools (search/fetch/Python/shell/files) → observe → deliver. Falls back to DEMO mode without an LLM key; put your API key in backend/.env to switch to real autonomous reasoning.",
+    trace:"Execution Trace (Live)", empty:"No task yet. Type a task on the left and hit Run.",
+    ph_task:"e.g. Research the latest advances in AI agents and write a brief report…",
+    tags:{thinking:"Thinking",tool_call:"Tool Call",observation:"Observation",result:"Final Answer",error:"Error",start:"Task Start",done:"Done"},
+    suggests:["Research latest AI agent advances & report","Compute first 30 Fibonacci numbers in Python","Search today's tech news and summarize"]
+  }
+};
+let lang = "zh";
+const $ = s => document.querySelector(s);
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(e=>{ e.textContent = I18N[lang][e.getAttribute('data-i18n')]; });
+  const ph = document.querySelector('[data-i18n-ph]'); if(ph) ph.placeholder = I18N[lang].ph_task;
+  $("#langBtn").textContent = lang==="zh"?"EN":"中";
+  const sg = $("#suggest"); sg.innerHTML="";
+  I18N[lang].suggests.forEach(s=>{ const c=document.createElement("div"); c.className="chip"; c.textContent=s;
+    c.onclick=()=>{ $("#task").value=s; }; sg.appendChild(c); });
+}
+$("#langBtn").onclick=()=>{ lang = lang==="zh"?"en":"zh"; applyLang(); };
+applyLang();
+
+const API = (window.AURAVIA_API_BASE || "").replace(/\/$/, "");  // 去掉结尾斜杠
+async function loadHealth(){
+  try{ const r=await fetch(API + "/api/health"); const j=await r.json();
+    $("#modeBadge").textContent = j.demo ? (lang==="zh"?"DEMO 演示模式":"DEMO MODE") : (lang==="zh"?"真实模式 · "+j.model:"LIVE · "+j.model);
+  }catch(e){ $("#modeBadge").textContent = "offline"; }
+}
+loadHealth();
+
+function addEv(ev){
+  const e = document.getElementById("emptyHint"); if(e) e.remove();
+  const tagName = I18N[lang].tags[ev.type] || ev.type;
+  const div = document.createElement("div");
+  div.className = "ev "+ev.type;
+  const isObs = ev.type==="observation";
+  div.innerHTML = `<span class="tag">${tagName}</span><div class="body"></div>`;
+  div.querySelector(".body").textContent = ev.content || "";
+  if(ev.type==="result") div.querySelector(".body").style.whiteSpace="pre-wrap";
+  document.getElementById("log").appendChild(div);
+  document.getElementById("log").scrollTop = document.getElementById("log").scrollHeight;
+}
+function setRunning(on){
+  $("#runBtn").disabled = on;
+  $("#runBtn").textContent = on ? (lang==="zh"?"● 运行中…":"● Running…") : I18N[lang].run;
+}
+async function runTask(){
+  const task = $("#task").value.trim();
+  if(!task || $("#runBtn").disabled) return;
+  setRunning(true);
+  const body = document.createElement("div");
+  try{
+    const resp = await fetch(API + "/api/run",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task})});
+    const reader = resp.body.getReader();
+    const dec = new TextDecoder(); let buf="";
+    while(true){
+      const {done,value}=await reader.read(); if(done) break;
+      buf += dec.decode(value,{stream:true});
+      let idx;
+      while((idx=buf.indexOf("\n\n"))>=0){
+        const chunk = buf.slice(0,idx); buf=buf.slice(idx+2);
+        if(chunk.startsWith("data: ")){
+          try{ const ev=JSON.parse(chunk.slice(6)); addEv(ev); }
+          catch(e){}
+        }
+      }
+    }
+  }catch(e){ addEv({type:"error",content:String(e)}); }
+  setRunning(false);
+}
+$("#runBtn").onclick=runTask;
+$("#clearBtn").onclick=()=>{ document.getElementById("log").innerHTML='<div class="empty" id="emptyHint">'+I18N[lang].empty+'</div>'; $("#task").value=""; };
+$("#task").addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&e.key==="Enter") runTask(); });
+</script>
+</body>
+</html>
